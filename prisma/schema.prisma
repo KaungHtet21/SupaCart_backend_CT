@@ -1,0 +1,157 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  MEMBER
+}
+
+enum MembershipStatus {
+  PENDING
+  ACTIVE
+  EXPIRED
+  SUSPENDED
+}
+
+enum PaymentStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum CheckInStatus {
+  ALLOWED
+  DENIED
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  firstName String
+  lastName  String
+  phone     String?
+  role      UserRole @default(MEMBER)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  memberships Membership[]
+  checkIns    CheckIn[]
+  notifications Notification[]
+  trainingSessions PersonalTrainingSession[]
+
+  @@map("users")
+}
+
+model MembershipPackage {
+  id          String  @id @default(uuid())
+  title       String
+  description String?
+  price       Float
+  durationDays Int
+  isActive    Boolean @default(true)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  memberships Membership[]
+
+  @@map("membership_packages")
+}
+
+model Membership {
+  id                String           @id @default(uuid())
+  userId            String
+  packageId         String
+  status            MembershipStatus @default(PENDING)
+  paymentStatus     PaymentStatus    @default(PENDING)
+  paymentScreenshot String? // Now stores R2 URL instead of file path
+  startDate         DateTime?
+  endDate           DateTime?
+  createdAt         DateTime         @default(now())
+  updatedAt         DateTime         @updatedAt
+
+  // Relations
+  user    User              @relation(fields: [userId], references: [id], onDelete: Cascade)
+  package MembershipPackage @relation(fields: [packageId], references: [id])
+  checkIns CheckIn[]
+
+  @@map("memberships")
+}
+
+model CheckIn {
+  id           String        @id @default(uuid())
+  userId       String
+  membershipId String
+  status       CheckInStatus
+  checkInTime  DateTime      @default(now())
+  notes        String?
+
+  // Relations
+  user       User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  membership Membership @relation(fields: [membershipId], references: [id])
+
+  @@map("check_ins")
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  title     String
+  message   String
+  isRead    Boolean  @default(false)
+  type      String   // 'registration_approved', 'registration_rejected', 'membership_expiring', etc.
+  createdAt DateTime @default(now())
+
+  // Relations
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
+}
+
+model PersonalTrainer {
+  id          String  @id @default(uuid())
+  name        String
+  email       String  @unique
+  phone       String?
+  specialties String[]
+  bio         String?
+  isActive    Boolean @default(true)
+  hourlyRate  Float
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  sessions PersonalTrainingSession[]
+
+  @@map("personal_trainers")
+}
+
+model PersonalTrainingSession {
+  id           String   @id @default(uuid())
+  userId       String
+  trainerId    String
+  sessionDate  DateTime
+  duration     Int      // in minutes
+  price        Float
+  status       String   @default("SCHEDULED") // SCHEDULED, COMPLETED, CANCELLED
+  notes        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  // Relations
+  user    User            @relation(fields: [userId], references: [id], onDelete: Cascade)
+  trainer PersonalTrainer @relation(fields: [trainerId], references: [id])
+
+  @@map("personal_training_sessions")
+}
