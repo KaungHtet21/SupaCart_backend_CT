@@ -38,7 +38,6 @@ export class AdminOperations {
       }),
     ]);
 
-    // Calculate revenue (simplified - in real app, you'd have payment records)
     const memberships = await this.prisma.membership.findMany({
       where: { paymentStatus: 'APPROVED' },
       include: { package: true },
@@ -46,7 +45,6 @@ export class AdminOperations {
 
     const totalRevenue = memberships.reduce((sum, membership) => sum + membership.package.price, 0);
 
-    // Monthly revenue (current month)
     const currentMonth = new Date();
     currentMonth.setDate(1);
     const monthlyMemberships = await this.prisma.membership.findMany({

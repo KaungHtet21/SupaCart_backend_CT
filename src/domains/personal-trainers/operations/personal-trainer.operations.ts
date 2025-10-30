@@ -12,7 +12,6 @@ export class PersonalTrainerOperations {
   constructor(private prisma: PrismaService) {}
 
   async createPersonalTrainer(input: CreatePersonalTrainerInput) {
-    // Check if trainer with email already exists
     const existingTrainer = await this.prisma.personalTrainer.findUnique({
       where: { email: input.email },
     });
@@ -75,7 +74,6 @@ export class PersonalTrainerOperations {
   }
 
   async createPersonalTrainingSession(userId: string, input: CreatePersonalTrainingSessionInput) {
-    // Verify trainer exists
     const trainer = await this.prisma.personalTrainer.findUnique({
       where: { id: input.trainerId },
     });
@@ -84,7 +82,6 @@ export class PersonalTrainerOperations {
       throw new NotFoundException('Personal trainer not found');
     }
 
-    // Calculate price based on duration and hourly rate
     const price = (input.duration / 60) * trainer.hourlyRate;
 
     return this.prisma.personalTrainingSession.create({
